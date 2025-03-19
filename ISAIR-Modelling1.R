@@ -41,3 +41,4 @@ haiti_sorted <- haiti_summary %>%
 
 #Extract the top 5 worst-served areas.
 top_5_worst <- head(haiti_sorted,5)
+top_5_worst

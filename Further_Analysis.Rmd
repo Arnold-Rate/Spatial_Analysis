@@ -1,0 +1,122 @@
+---
+title: "Spatial Analysis R Continuum"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+## Further Spatial Analysis to the Data.
+#1. Try turning the analysis into one piped sequence of code.
+#2. Compare health coverage for males and females in the Northern departments.
+#3. Compare the health coverage in another area of Haiti.
+#4. Try plotting a bar chart of the health coverage by area.
+#5. Combine multiple plots using patchwork.
+
+
+```{r}
+#Install and Load the necessary packages to run the tasks.
+library(dplyr)
+library(readr)
+library(ggplot2)
+install.packages("patchwork")
+library(patchwork)
+```
+
+#Before we run the required tasks, we first upload out raw data to R.
+```{r}
+haiti_data <- read_csv("~/R/isair_r/data/haiti/haiti-healthsites.csv")
+View(haiti_data)
+```
+
+#1. Turn analysis into a single piped sequence.
+```{r}
+haiti_summary <- haiti_data %>%
+  select(adm1_en, adm2_en, num_health_facilities, total_population) %>%
+  filter(adm1_en %in% c("North", "North-East", "North-West")) %>%
+  group_by(adm1_en, adm2_en) %>%
+  summarise(
+    num_health_facilities = sum(num_health_facilities),  # Sum facilities if grouped
+    total_population = first(total_population)  # Take first value since it's already grouped
+  ) %>%
+  mutate(pop_per_health = total_population / num_health_facilities) %>%
+  arrange(desc(pop_per_health))
+
+# Print the first few rows of the summary
+print(haiti_summary)
+
+# Extract the top 5 worst-served areas.
+top_5_worst <- head(haiti_summary, 5)
+
+#Save the trasformed dataset.
+write_csv(haiti_summary, "~/R/isair_r/data/haiti/haiti-healthsites.csv")
+
+#Print results
+print(top_5_worst)
+
+```
+
+
+
+#2. Comparing the health coverage for males and females in Northern departments.
+```{r}
+#The data provided does not come with gender categories.
+```
+
+#3. Compare the health coverage in another area of Haiti.
+```{r}
+head(haiti_data)
+
+## Data Processing and Piped Analysis
+northern_depts <- haiti_data %>%
+  filter(adm1_en == "North")
+
+northwest_depts <- haiti_data %>%
+  filter(adm1_en == "North-West")
+
+
+## Compare Health Coverage in Northern Departments
+ggplot(northern_depts, aes(x = reorder(adm2_en, pop_per_health), y = pop_per_health)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Health Coverage in Northern Departments",
+       x = "District",
+       y = "Population per Health Facility")
+
+
+## Compare Health Coverage in North-West Departments
+ggplot(northwest_depts, aes(x = reorder(adm2_en, pop_per_health), y = pop_per_health)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  coord_flip() +
+  labs(title = "Health Coverage in North-West Departments",
+       x = "District",
+       y = "Population per Health Facility")
+```
+
+#4. Combine multiple plots using patchwork.
+```{r}
+north_plot <- ggplot(northern_depts, aes(x = reorder(adm2_en, pop_per_health), y = pop_per_health)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Health Coverage in Northern Departments",
+       x = "District",
+       y = "Population per Health Facility")
+
+nw_plot <- ggplot(northwest_depts, aes(x = reorder(adm2_en, pop_per_health), y = pop_per_health)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  coord_flip() +
+  labs(title = "Health Coverage in North-West Departments",
+       x = "District",
+       y = "Population per Health Facility")
+
+north_plot + nw_plot
+```
+
+#Overall Health Coverage by Department
+```{r}
+ggplot(haiti_data, aes(x = adm1_en, y = pop_per_health, fill = adm1_en)) +
+  geom_boxplot() +
+  labs(title = "Overall Health Coverage Comparison by Department",
+       x = "Department",
+       y = "Population per Health Facility") +
+  theme(legend.position = "none")
+```
+
